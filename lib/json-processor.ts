@@ -1233,7 +1233,7 @@ export async function processJsonDataAsync(
     }
     const startYear = Math.min(...allYears)
     const forecastYear = Math.max(...allYears)
-    const baseYear = startYear // Base year = startYear (2025 for 2025-2033 data)
+    const baseYear = startYear + 1 // Base year = 2026 for 2025-2033 data
     // Historical/Forecast split: years before base year are historical
     const historicalEndYear = baseYear - 1 // 2025
     console.log(`Years: ${startYear} to ${forecastYear}, base: ${baseYear}, historical end: ${historicalEndYear}`)
