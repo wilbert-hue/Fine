@@ -674,7 +674,7 @@ async function processSegmentTypeAsync(
   // Helper function to extract segments from a data source
   const extractSegmentsFromSource = async (sourceData: RawJsonData, sourceName: string) => {
     // Special handling for "By Region" segment type - use geography names as parent hierarchy
-    const isRegionSegmentType = segmentType === 'By Region' || segmentType === 'By State' || segmentType === 'By Country'
+    const isRegionSegmentType = segmentType === 'By State' || segmentType === 'By Country'
 
     for (let geoIdx = 0; geoIdx < geographies.length; geoIdx++) {
       const geography = geographies[geoIdx]
@@ -976,7 +976,7 @@ async function processSegmentTypeAsync(
       // segmentPath: [North America, U.S.]
       // For country-level: geography = "U.S." (deepest level)
       // For region-level (self-referencing like North America > North America): geography = "North America"
-      const isRegionSegmentType = segmentType === 'By Region' || segmentType === 'By State' || segmentType === 'By Country'
+      const isRegionSegmentType = segmentType === 'By State' || segmentType === 'By Country'
       if (isRegionSegmentType && segmentPath.length > 0 && segmentPath[0]) {
         const regionName = segmentPath[0]
         const entityName = segmentPath.length > 1 ? segmentPath[segmentPath.length - 1] : regionName
@@ -1233,7 +1233,7 @@ export async function processJsonDataAsync(
     }
     const startYear = Math.min(...allYears)
     const forecastYear = Math.max(...allYears)
-    const baseYear = startYear + 5 // Base year = 2026 for 2021-2033 data
+    const baseYear = startYear // Base year = startYear (2025 for 2025-2033 data)
     // Historical/Forecast split: years before base year are historical
     const historicalEndYear = baseYear - 1 // 2025
     console.log(`Years: ${startYear} to ${forecastYear}, base: ${baseYear}, historical end: ${historicalEndYear}`)
@@ -1267,11 +1267,12 @@ export async function processJsonDataAsync(
     }
 
     // Extract regions AND countries from "By Region" segment type as additional geographies
-    // This builds a full geography hierarchy: Global > Regions > Countries
+    // DISABLED: "By Region" is treated as a normal segment type, not a geography hierarchy.
     const regionGeographies: string[] = []
     const regionToCountries: Record<string, string[]> = {}
     const allCountries: string[] = []
-    for (const topGeo of geographies) {
+    // eslint-disable-next-line no-constant-condition
+    if (false) for (const topGeo of geographies) {
       const geoData = structureData[topGeo]
       if (geoData && typeof geoData === 'object') {
         // Look for "By Region" segment type
@@ -1334,8 +1335,7 @@ export async function processJsonDataAsync(
     }
     console.log(`Found ${segmentTypes.size} segment types:`, Array.from(segmentTypes))
 
-    // Remove "By Region" (and similar) from segment types - these are geography dimensions, not segments
-    segmentTypes.delete('By Region')
+    // Keep "By Region" as a segment type (not a geography dimension)
     segmentTypes.delete('By State')
     segmentTypes.delete('By Country')
     console.log(`Segment types after removing geography types:`, Array.from(segmentTypes))
@@ -1397,7 +1397,7 @@ export async function processJsonDataAsync(
 
     // Process "By Region" data separately for geography-based records
     // These records are NOT added to segment types but provide data for region/country geographies
-    const geoSegmentTypes = ['By Region', 'By State', 'By Country']
+    const geoSegmentTypes = ['By State', 'By Country']
     for (const geoSegType of geoSegmentTypes) {
       // Check if this geo segment type exists in the structure data
       const hasGeoSegType = Object.values(structureData).some(
@@ -1472,7 +1472,7 @@ export async function processJsonDataAsync(
     
     // Build metadata
     const metadata: Metadata = {
-      market_name: 'Normothermic Machine Perfusion Market',
+      market_name: 'Fine Arts Antique Moving Market',
       market_type: 'Market Analysis',
       industry: 'Healthcare & Pharmaceuticals',
       years: allYears,

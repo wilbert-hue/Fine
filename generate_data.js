@@ -1,203 +1,125 @@
 const fs = require('fs');
 const path = require('path');
 
-// Years: 2021-2033
-const years = [2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
+const years = [2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
 
-// Geographies with their region grouping
-const regions = {
-  "North America": ["U.S.", "Canada"],
-  "Europe": ["U.K.", "Germany", "Italy", "France", "Spain", "Russia", "Rest of Europe"],
-  "Asia Pacific": ["China", "India", "Japan", "South Korea", "ASEAN", "Australia", "Rest of Asia Pacific"],
-  "Latin America": ["Brazil", "Argentina", "Mexico", "Rest of Latin America"],
-  "Middle East & Africa": ["GCC", "South Africa", "Rest of Middle East & Africa"]
-};
-
-// New segment definitions with market share splits (proportions within each segment type)
-const segmentTypes = {
-  "By Type": {
-    "Sub-Normothermic Perfusion (20–34°C)": 0.55,
-    "Warm or Normothermic Perfusion (35–37°C)": 0.45
-  },
-  "By Organ Type": {
-    "Liver": 0.35,
-    "Heart": 0.22,
-    "Lung": 0.18,
-    "Kidney": 0.15,
-    "Others (Pancreas, Small bowel / Intestine, Composite Tissues / Limb Perfusion (emerging use cases))": 0.10
-  },
-  "Application / Use Case": {
-    "Organ Preservation": 0.30,
-    "Viability Assessment": 0.25,
-    "Physiologic Transport": 0.20,
-    "Reconditioning Marginal Organs": 0.15,
-    "Others (Research Use / Protocol development)": 0.10
-  },
-  "By End User": {
-    "Hospitals & Clinics": 0.40,
-    "Specialty Clinic/Centers": 0.25,
-    "Transplant Centers": 0.25,
-    "Others (Research Institutes/Centers, Organ Procurement Organizations, etc.)": 0.10
-  }
-};
-
-// Regional base values (USD Million) for 2021 - total market per region
-// Global Normothermic Machine Perfusion market ~$300M in 2021, growing ~12% CAGR
-const regionBaseValues = {
-  "North America": 120,
-  "Europe": 90,
-  "Asia Pacific": 50,
-  "Latin America": 20,
-  "Middle East & Africa": 15
-};
-
-// Country share within region (must sum to ~1.0)
-const countryShares = {
-  "North America": { "U.S.": 0.82, "Canada": 0.18 },
-  "Europe": { "U.K.": 0.18, "Germany": 0.22, "Italy": 0.12, "France": 0.16, "Spain": 0.10, "Russia": 0.08, "Rest of Europe": 0.14 },
-  "Asia Pacific": { "China": 0.28, "India": 0.12, "Japan": 0.25, "South Korea": 0.12, "ASEAN": 0.10, "Australia": 0.07, "Rest of Asia Pacific": 0.06 },
-  "Latin America": { "Brazil": 0.45, "Argentina": 0.15, "Mexico": 0.25, "Rest of Latin America": 0.15 },
-  "Middle East & Africa": { "GCC": 0.45, "South Africa": 0.25, "Rest of Middle East & Africa": 0.30 }
-};
-
-// Growth rates (CAGR) per region - slightly different for variety
-const regionGrowthRates = {
-  "North America": 0.115,
-  "Europe": 0.108,
-  "Asia Pacific": 0.145,
-  "Latin America": 0.125,
-  "Middle East & Africa": 0.118
-};
-
-// Segment-specific growth multipliers (relative to regional base CAGR)
-const segmentGrowthMultipliers = {
-  "By Type": {
-    "Sub-Normothermic Perfusion (20–34°C)": 0.95,
-    "Warm or Normothermic Perfusion (35–37°C)": 1.07
-  },
-  "By Organ Type": {
-    "Liver": 1.08,
-    "Heart": 1.05,
-    "Lung": 1.12,
-    "Kidney": 0.95,
-    "Others (Pancreas, Small bowel / Intestine, Composite Tissues / Limb Perfusion (emerging use cases))": 1.20
-  },
-  "Application / Use Case": {
-    "Organ Preservation": 0.92,
-    "Viability Assessment": 1.15,
-    "Physiologic Transport": 1.05,
-    "Reconditioning Marginal Organs": 1.18,
-    "Others (Research Use / Protocol development)": 1.10
-  },
-  "By End User": {
-    "Hospitals & Clinics": 0.98,
-    "Specialty Clinic/Centers": 1.10,
-    "Transplant Centers": 1.08,
-    "Others (Research Institutes/Centers, Organ Procurement Organizations, etc.)": 1.05
-  }
-};
-
-// Volume multiplier: units per USD Million (rough: ~500 units per $1M for perfusion devices)
-const volumePerMillionUSD = 480;
-
-// Seeded pseudo-random for reproducibility
-let seed = 42;
-function seededRandom() {
-  seed = (seed * 16807 + 0) % 2147483647;
-  return (seed - 1) / 2147483646;
+function ts(arr) {
+  const o = {};
+  years.forEach((y, i) => { o[y] = arr[i]; });
+  return o;
 }
 
-function addNoise(value, noiseLevel = 0.03) {
-  return value * (1 + (seededRandom() - 0.5) * 2 * noiseLevel);
-}
-
-function roundTo1(val) {
-  return Math.round(val * 10) / 10;
-}
-
-function roundToInt(val) {
-  return Math.round(val);
-}
-
-function generateTimeSeries(baseValue, growthRate, roundFn) {
-  const series = {};
-  for (let i = 0; i < years.length; i++) {
-    const year = years[i];
-    const rawValue = baseValue * Math.pow(1 + growthRate, i);
-    series[year] = roundFn(addNoise(rawValue));
-  }
-  return series;
-}
-
-function generateData(isVolume) {
-  const data = {};
-  const roundFn = isVolume ? roundToInt : roundTo1;
-  const multiplier = isVolume ? volumePerMillionUSD : 1;
-
-  // Generate data for each region and country
-  for (const [regionName, countries] of Object.entries(regions)) {
-    const regionBase = regionBaseValues[regionName] * multiplier;
-    const regionGrowth = regionGrowthRates[regionName];
-
-    // Region-level data
-    data[regionName] = {};
-    for (const [segType, segments] of Object.entries(segmentTypes)) {
-      data[regionName][segType] = {};
-      for (const [segName, share] of Object.entries(segments)) {
-        const segGrowth = regionGrowth * segmentGrowthMultipliers[segType][segName];
-        const segBase = regionBase * share;
-        data[regionName][segType][segName] = generateTimeSeries(segBase, segGrowth, roundFn);
-      }
+const valueData = {
+  "U.S.": {
+    "By Customer Type": {
+      "Museums & Cultural Institutions":            ts([337.1, 352.7, 369.7, 388.5, 409.8, 433.4, 458.8, 485.0, 512.4]),
+      "Private Collectors & Estates":               ts([530.2, 572.0, 617.7, 667.8, 723.5, 785.6, 853.3, 928.6, 1011.3]),
+      "Auction Houses & Art Dealers":               ts([383.0, 412.6, 444.8, 480.1, 519.4, 564.1, 614.0, 669.6, 732.8]),
+      "Corporate & Hospitality Clients":            ts([144.0, 155.5, 168.3, 182.9, 199.5, 218.5, 240.3, 264.6, 291.3]),
+      "Artists & Studios":                          ts([109.2, 112.5, 116.1, 120.3, 125.2, 130.9, 137.4, 144.4, 151.8]),
+      "Others (Restoration & Conservation Firms)":  ts([ 79.1,  81.2,  83.6,  86.3,  89.6,  93.0,  97.0, 101.4, 105.9])
+    },
+    "By Service Type": {
+      "Packing & Crating Services":                 ts([373.5, 394.3, 417.4, 442.9, 470.7, 502.2, 537.2, 576.0, 618.5]),
+      "Climate-Controlled Transportation":          ts([433.6, 457.0, 482.0, 509.5, 540.7, 575.6, 614.6, 657.5, 705.3]),
+      "Art Installation & De-installation":         ts([218.4, 236.0, 255.4, 277.2, 301.8, 329.5, 360.1, 393.0, 428.6]),
+      "Storage & Vaulting":                         ts([311.8, 338.3, 367.5, 399.5, 435.3, 475.4, 519.3, 568.3, 622.4]),
+      "Insurance & Valuation Services":             ts([112.4, 116.4, 120.8, 125.4, 130.5, 136.1, 142.0, 148.4, 155.3]),
+      "Courier & White-Glove Delivery":             ts([ 88.6,  96.1, 104.4, 113.7, 124.3, 136.6, 150.2, 165.0, 181.1]),
+      "Others (Customs Brokerage, Digital Inventory)": ts([44.3, 48.3, 52.8, 57.9, 63.7, 70.2, 77.4, 85.4, 94.1])
+    },
+    "By Region": {
+      "Northeast": ts([629.9, 668.7, 709.8, 753.8, 803.1, 858.0, 917.0, 980.8, 1051.0]),
+      "Southeast": ts([405.1, 438.4, 475.7, 517.2, 563.3, 615.3, 673.2, 737.4, 808.4]),
+      "Midwest":   ts([265.9, 274.2, 283.5, 294.3, 306.8, 321.2, 337.6, 355.4, 374.1]),
+      "West":      ts([153.5, 165.2, 178.3, 193.1, 210.0, 229.3, 251.3, 275.8, 302.7]),
+      "Southwest": ts([128.2, 139.9, 153.0, 167.6, 183.9, 201.8, 221.7, 244.2, 269.3])
     }
+  }
+};
 
-    // Add "By Country" for each region
-    data[regionName]["By Country"] = {};
-    for (const country of countries) {
-      const cShare = countryShares[regionName][country];
-      // Use a slight variation of region growth per country
-      const countryGrowthVariation = 1 + (seededRandom() - 0.5) * 0.06;
-      const countryBase = regionBase * cShare;
-      const countryGrowth = regionGrowth * countryGrowthVariation;
-      data[regionName]["By Country"][country] = generateTimeSeries(countryBase, countryGrowth, roundFn);
+const volumeData = {
+  "U.S.": {
+    "By Customer Type": {
+      "Museums & Cultural Institutions":            ts([17083, 17520, 17974, 18476, 19054, 19701, 20376, 21047, 21713]),
+      "Private Collectors & Estates":               ts([30516, 32101, 33817, 35648, 37578, 39595, 41688, 43869, 46122]),
+      "Auction Houses & Art Dealers":               ts([18575, 19317, 20118, 20966, 21850, 22761, 23691, 24646, 25616]),
+      "Corporate & Hospitality Clients":            ts([ 6717,  7019,  7351,  7713,  8096,  8493,  8892,  9289,  9689]),
+      "Artists & Studios":                          ts([ 6054,  6258,  6470,  6698,  6945,  7209,  7480,  7750,  8023]),
+      "Others (Restoration & Conservation Firms)":  ts([ 3980,  4071,  4166,  4271,  4393,  4530,  4673,  4814,  4953])
+    },
+    "By Service Type": {
+      "Packing & Crating Services":                 ts([20897, 21492, 22114, 22821, 23624, 24473, 25371, 26277, 27176]),
+      "Climate-Controlled Transportation":          ts([23717, 24687, 25663, 26628, 27651, 28762, 29866, 30953, 32035]),
+      "Art Installation & De-installation":         ts([10283, 10734, 11251, 11818, 12405, 13009, 13641, 14313, 15014]),
+      "Storage & Vaulting":                         ts([12522, 13209, 13991, 14850, 15751, 16691, 17685, 18751, 19875]),
+      "Insurance & Valuation Services":             ts([ 5307,  5454,  5606,  5770,  5948,  6138,  6332,  6522,  6712]),
+      "Courier & White-Glove Delivery":             ts([ 7546,  7945,  8384,  8864,  9375,  9909, 10453, 11003, 11564]),
+      "Others (Customs Brokerage, Digital Inventory)": ts([2654, 2765, 2887, 3021, 3162, 3307, 3452, 3596, 3747])
+    },
+    "By Region": {
+      "Northeast": ts([29189, 30217, 31361, 32561, 33800, 35052, 36321, 37651, 38984]),
+      "Southeast": ts([15424, 16187, 16989, 17856, 18794, 19804, 20860, 21939, 23057]),
+      "Midwest":   ts([10283, 10554, 10835, 11145, 11501, 11899, 12315, 12729, 13141]),
+      "West":      ts([19819, 20661, 21541, 22489, 23513, 24611, 25751, 26903, 28085]),
+      "Southwest": ts([ 8210,  8667,  9170,  9721, 10308, 10923, 11553, 12193, 12849])
     }
+  }
+};
 
-    // Country-level data
-    for (const country of countries) {
-      const cShare = countryShares[regionName][country];
-      const countryBase = regionBase * cShare;
-      const countryGrowthVariation = 1 + (seededRandom() - 0.5) * 0.04;
-      const countryGrowth = regionGrowth * countryGrowthVariation;
+// Build sub-region top-level entries by allocating U.S. customer/service segments
+// proportionally to each sub-region's share of the U.S. total per year.
+function buildSubRegions(data) {
+  const us = data["U.S."];
+  const regionTotals = us["By Region"]; // {region: {year: val}}
+  const subRegionNames = Object.keys(regionTotals);
 
-      data[country] = {};
-      for (const [segType, segments] of Object.entries(segmentTypes)) {
-        data[country][segType] = {};
-        for (const [segName, share] of Object.entries(segments)) {
-          const segGrowth = countryGrowth * segmentGrowthMultipliers[segType][segName];
-          const segBase = countryBase * share;
-          // Add slight country-specific variation to segment share
-          const shareVariation = 1 + (seededRandom() - 0.5) * 0.1;
-          data[country][segType][segName] = generateTimeSeries(segBase * shareVariation, segGrowth, roundFn);
+  for (const region of subRegionNames) {
+    data[region] = { "By Customer Type": {}, "By Service Type": {} };
+    for (const segType of ["By Customer Type", "By Service Type"]) {
+      for (const [segName, series] of Object.entries(us[segType])) {
+        const out = {};
+        for (const y of years) {
+          const usTotal = Object.values(us[segType]).reduce((a, s) => a + s[y], 0);
+          const share = regionTotals[region][y] / usTotal;
+          const val = series[y] * share;
+          out[y] = Number.isInteger(series[y]) ? Math.round(val) : Math.round(val * 10) / 10;
         }
+        data[region][segType][segName] = out;
       }
     }
   }
-
-  return data;
 }
+// Sub-regions are kept ONLY as items inside the "By Region" segment, not as
+// top-level geographies, so the geography selector shows just U.S.
+// buildSubRegions(valueData);
+// buildSubRegions(volumeData);
 
-// Generate both datasets
-seed = 42;
-const valueData = generateData(false);
-seed = 7777;
-const volumeData = generateData(true);
+const segmentationAnalysis = {
+  "U.S.": {
+    "By Customer Type": Object.fromEntries(Object.keys(valueData["U.S."]["By Customer Type"]).map(k => [k, {}])),
+    "By Service Type":  Object.fromEntries(Object.keys(valueData["U.S."]["By Service Type"]).map(k => [k, {}])),
+    "By Region":        Object.fromEntries(Object.keys(valueData["U.S."]["By Region"]).map(k => [k, {}]))
+  }
+};
 
-// Write files
 const outDir = path.join(__dirname, 'public', 'data');
 fs.writeFileSync(path.join(outDir, 'value.json'), JSON.stringify(valueData, null, 2));
 fs.writeFileSync(path.join(outDir, 'volume.json'), JSON.stringify(volumeData, null, 2));
+fs.writeFileSync(path.join(outDir, 'segmentation_analysis.json'), JSON.stringify(segmentationAnalysis, null, 2));
 
-console.log('Generated value.json and volume.json successfully');
-console.log('Value geographies:', Object.keys(valueData).length);
-console.log('Volume geographies:', Object.keys(volumeData).length);
-console.log('Segment types:', Object.keys(valueData['North America']));
-console.log('Sample - North America, By Type:', JSON.stringify(valueData['North America']['By Type'], null, 2));
+// Verification: row totals per segment type per year should match across types
+function verify(name, data) {
+  console.log(`\n=== ${name} ===`);
+  const segTypes = Object.keys(data["U.S."]);
+  for (const y of years) {
+    const totals = segTypes.map(st => {
+      const sum = Object.values(data["U.S."][st]).reduce((a, s) => a + s[y], 0);
+      return Math.round(sum * 10) / 10;
+    });
+    console.log(`${y}:`, segTypes.map((s,i) => `${s}=${totals[i]}`).join(' | '));
+  }
+}
+verify('VALUE', valueData);
+verify('VOLUME', volumeData);
+console.log('\nWrote value.json, volume.json, segmentation_analysis.json');

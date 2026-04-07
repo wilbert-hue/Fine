@@ -1,63 +1,28 @@
 {
-  "Global": {
-    "By Type": {
-      "Sub-Normothermic Perfusion (20–34°C)": {},
-      "Warm or Normothermic Perfusion (35–37°C)": {}
+  "U.S.": {
+    "By Customer Type": {
+      "Museums & Cultural Institutions": {},
+      "Private Collectors & Estates": {},
+      "Auction Houses & Art Dealers": {},
+      "Corporate & Hospitality Clients": {},
+      "Artists & Studios": {},
+      "Others (Restoration & Conservation Firms)": {}
     },
-    "By Organ Type": {
-      "Liver": {},
-      "Heart": {},
-      "Lung": {},
-      "Kidney": {},
-      "Others (Pancreas, Small bowel / Intestine, Composite Tissues / Limb Perfusion (emerging use cases))": {}
-    },
-    "Application / Use Case": {
-      "Organ Preservation": {},
-      "Viability Assessment": {},
-      "Physiologic Transport": {},
-      "Reconditioning Marginal Organs": {},
-      "Others (Research Use / Protocol development)": {}
-    },
-    "By End User": {
-      "Hospitals & Clinics": {},
-      "Specialty Clinic/Centers": {},
-      "Transplant Centers": {},
-      "Others (Research Institutes/Centers, Organ Procurement Organizations, etc.)": {}
+    "By Service Type": {
+      "Packing & Crating Services": {},
+      "Climate-Controlled Transportation": {},
+      "Art Installation & De-installation": {},
+      "Storage & Vaulting": {},
+      "Insurance & Valuation Services": {},
+      "Courier & White-Glove Delivery": {},
+      "Others (Customs Brokerage, Digital Inventory)": {}
     },
     "By Region": {
-      "North America": {
-        "U.S.": {},
-        "Canada": {}
-      },
-      "Europe": {
-        "U.K.": {},
-        "Germany": {},
-        "Italy": {},
-        "France": {},
-        "Spain": {},
-        "Russia": {},
-        "Rest of Europe": {}
-      },
-      "Asia Pacific": {
-        "China": {},
-        "India": {},
-        "Japan": {},
-        "South Korea": {},
-        "ASEAN": {},
-        "Australia": {},
-        "Rest of Asia Pacific": {}
-      },
-      "Latin America": {
-        "Brazil": {},
-        "Argentina": {},
-        "Mexico": {},
-        "Rest of Latin America": {}
-      },
-      "Middle East & Africa": {
-        "GCC": {},
-        "South Africa": {},
-        "Rest of Middle East & Africa": {}
-      }
+      "Northeast": {},
+      "Southeast": {},
+      "Midwest": {},
+      "West": {},
+      "Southwest": {}
     }
   }
 }
