@@ -1153,7 +1153,7 @@ async function processSegmentTypeAsync(
         }
       } else {
         // Calculate CAGR from base year (2023) to forecast year
-        const cagrStartYear = allYears[0] + 4 // Base year = 2023 for 2019-2031 data
+        const cagrStartYear = allYears[0] + 1 // Base year = 2026 for 2025-2033 data
         const cagrEndYear = allYears[allYears.length - 1]
         const startVal = timeSeries[cagrStartYear] || 0
         const endVal = timeSeries[cagrEndYear] || 0
